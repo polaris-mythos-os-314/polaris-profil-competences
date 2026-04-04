@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polaris-Mythos-Omega Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { margin:0; font-family: Arial, sans-serif; background:#070707; color:#e6e6e6; }
+header { padding:20px; text-align:center; background:rgba(15,15,15,0.8); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,215,0,0.2); }
+.logo-star { color:#ffd700; font-size:24px; animation: pulse 2s infinite; }
+.logo-omega { color:#ffd700; font-size:40px; text-shadow:0 0 15px rgba(255,215,0,0.6); }
+.subtitle { font-size:14px; color:#aaa; }
+.container { padding:20px; }
+.card { background:rgba(20,20,20,0.6); border:1px solid rgba(255,215,0,0.2); backdrop-filter:blur(10px); border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 0 15px rgba(255,215,0,0.1); }
+button { background:#ffd700; border:none; padding:8px 12px; cursor:pointer; margin:5px; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding:10px; border-bottom:1px solid #222; }
+th { color:#ffd700; }
+@keyframes pulse { 0% {opacity:1;} 50% {opacity:0.5;} 100% {opacity:1;} }
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo-star">★</div>
+<div class="logo-omega">Ω POLARIS-MYTHOS-OMEGA</div>
+<div id="subtitle" class="subtitle">Strategic Intelligence Dashboard</div>
+<button onclick="setLang('fr')">FR</button>
+<button onclick="setLang('en')">EN</button>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2 id="marketTitle">Marché</h2>
+<canvas id="marketChart"></canvas>
+</div>
+
+<div class="card">
+<h2 id="companyTitle">Entreprises</h2>
+<table>
+<thead>
+<tr><th>Nom</th><th>Prix</th><th>Cap</th><th>Iran</th></tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+<button onclick="exportCSV()">Export CSV</button>
+</div>
+
+</div>
+
+<script>
+const companies = [
+ {name:"NVIDIA", price:900, cap:2200, iran:4},
+ {name:"Microsoft", price:420, cap:3100, iran:2},
+ {name:"TSMC", price:140, cap:720, iran:-1},
+ {name:"Palantir", price:25, cap:55, iran:6}
+];
+
+const LANG = {
+ fr:{ subtitle:"Tableau d’Intelligence Stratégique", market:"Marché", companies:"Entreprises" },
+ en:{ subtitle:"Strategic Intelligence Dashboard", market:"Market", companies:"Companies" }
+};
+
+function setLang(lang){
+ document.getElementById("subtitle").innerText = LANG[lang].subtitle;
+ document.getElementById("marketTitle").innerText = LANG[lang].market;
+ document.getElementById("companyTitle").innerText = LANG[lang].companies;
+}
+
+function buildTable(){
+ let html="";
+ companies.forEach(c=>{
+  html+=`<tr><td>${c.name}</td><td>${c.price}</td><td>${c.cap}</td><td>${c.iran}%</td></tr>`;
+ });
+ document.getElementById("tableBody").innerHTML=html;
+}
+
+function buildChart(){
+ new Chart(document.getElementById("marketChart"),{
+  type:"bar",
+  data:{ labels:companies.map(c=>c.name),
+   datasets:[{ label:"Market Cap", data:companies.map(c=>c.cap) }] }
+ });
+}
+
+async function fetchAPI(){
+ try{
+  const res = await fetch("https://financialmodelingprep.com/api/v3/quote/NVDA,MSFT,TSM,PLTR?apikey=demo");
+  const data = await res.json();
+  data.forEach(d=>{
+   let c = companies.find(x=>x.name.toUpperCase().includes(d.symbol));
+   if(c) c.price=d.price;
+  });
+  buildTable();
+ }catch(e){ console.log("offline mode"); }
+}
+
+function exportCSV(){
+ let csv="Name,Price,Cap,Iran\n";
+ companies.forEach(c=>{ csv+=`${c.name},${c.price},${c.cap},${c.iran}\n`; });
+ let blob=new Blob([csv]);
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="omega.csv";
+ a.click();
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+ buildTable();
+ buildChart();
+ fetchAPI();
+});
+</script>
+
+</body>
+</html>
